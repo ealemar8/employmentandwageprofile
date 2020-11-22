@@ -1,3 +1,7 @@
+# This function extracts multiple years (as selected 
+# by user in input) of QCEW data at quarterly/annual frequency for 
+# all municipalities and industries in Puerto Rico
+
 extract_dat = function(firstyear, lastyear, averages = T, installed_BLSAPI = T){
   if(installed_BLSAPI==F){
     install.packages('blsAPI')
