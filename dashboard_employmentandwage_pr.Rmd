@@ -12,18 +12,22 @@ require(dplyr)
 require(readr)
 require(ggplot2)
 
-# QCEW data
+# Extract QCEW data 
+source('qcew_extractor.R')
+masterdat = extract_dat(2015, 2019, averages = T, installed_BLSAPI = T)
 
-require(RCurl)
-require(stringr)
-require(readxl)
-require(blsAPI)
-require(scales)
+# annual averages up to 2019
+masterdat = merge(masterdat, areas,
+              by = c('area_fips'),
+              all.x = T, all.y = F)
+masterdat$area_title = str_remove(masterdat$area_title,
+                              ' Municipio, Puerto Rico')
+masterdat$area_title = trimws(masterdat$area_title)
 
-masterdat = read.csv("Master QCEW Data R.csv", encoding = 'ASCII//TRANSLIT')
-
-#source('qcew_data.R')
-
+# agg level by supersector (73)
+masterdat = masterdat[masterdat$agglvl_code==73, ]
+masterdat$area_title = iconv(masterdat$area_title, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+masterdat$industry_title = iconv(masterdat$industry_title, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
 # employment aggregation
 emp = aggregate(masterdat$annual_avg_emplvl ~ masterdat$year + masterdat$industry_title + masterdat$area_title, FUN = sum)
@@ -37,8 +41,7 @@ emp = rbind(emp, data.frame("Year"=all_munis$`masterdat$year`, "Industry"=all_mu
 emp = rbind(emp, data.frame("Year"=all_industries$`masterdat$year`, "Industry"=paste0('All Industries'), "Municipality"=all_industries$`masterdat$area_title`, "Employment"=all_industries$`masterdat$annual_avg_emplvl`))
 emp = rbind(emp, data.frame('Year'=all$`masterdat$year`,
                             'Industry'=paste0('All Industries'), 'Municipality'=paste0('All Municipalities'), 'Employment'=all$`masterdat$annual_avg_emplvl`))
-
-
+                            
 # establishments
 estab = aggregate(masterdat$annual_avg_estabs ~ masterdat$year + masterdat$industry_title + masterdat$area_title, FUN = sum)
 names(estab) = c('Year', 'Industry', 'Municipality', 'Establishments')
@@ -51,7 +54,7 @@ estab = rbind(estab, data.frame("Year"=all_munis$`masterdat$year`, "Industry"=al
 estab = rbind(estab, data.frame("Year"=all_industries$`masterdat$year`, "Industry"=paste0('All Industries'), "Municipality"=all_industries$`masterdat$area_title`, "Establishments"=all_industries$`masterdat$annual_avg_estabs`))
 estab = rbind(estab, data.frame('Year'=all$`masterdat$year`,
                             'Industry'=paste0('All Industries'), 'Municipality'=paste0('All Municipalities'), 'Establishments'=all$`masterdat$annual_avg_estabs`))
-
+                            
 # wages
 wage = aggregate(masterdat$total_annual_wages ~ masterdat$year + masterdat$industry_title + masterdat$area_title, FUN = sum)
 names(wage) = c('Year', 'Industry', 'Municipality', 'Wages')
@@ -121,7 +124,6 @@ renderPlot({
     geom_text(data = wage[wage$Municipality==input$muni&wage$Industry==input$industry, ], aes(y = Wages, label = dollar(Wages, scale = 0.000001, suffix='M'))) + ggtitle(paste0('Wages in ', input$muni, ' - ', input$industry))  
 })
 ```
-
 
 
 
