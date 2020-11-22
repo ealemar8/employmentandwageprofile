@@ -12,18 +12,21 @@ require(dplyr)
 require(readr)
 require(ggplot2)
 
-# QCEW data
+# Extract QCEW data 
+source('qcew_extractor.R')
+masterdat = extract_dat(2015, 2019, averages = T, installed_BLSAPI = T)
+# annual averages up to 2019
+masterdat = merge(masterdat, areas,
+              by = c('area_fips'),
+              all.x = T, all.y = F)
+masterdat$area_title = str_remove(masterdat$area_title,
+                              ' Municipio, Puerto Rico')
+masterdat$area_title = trimws(masterdat$area_title)
 
-require(RCurl)
-require(stringr)
-require(readxl)
-require(blsAPI)
-require(scales)
-
-masterdat = read.csv("Master QCEW Data R.csv", encoding = 'ASCII//TRANSLIT')
-
-#source('qcew_data.R')
-
+# agg level by supersector (73)
+masterdat = masterdat[masterdat$agglvl_code==73, ]
+masterdat$area_title = iconv(masterdat$area_title, from = 'UTF-8', to = 'ASCII//TRANSLIT')
+masterdat$industry_title = iconv(masterdat$industry_title, from = 'UTF-8', to = 'ASCII//TRANSLIT')
 
 # employment aggregation
 emp = aggregate(masterdat$annual_avg_emplvl ~ masterdat$year + masterdat$industry_title + masterdat$area_title, FUN = sum)
@@ -37,8 +40,7 @@ emp = rbind(emp, data.frame("Year"=all_munis$`masterdat$year`, "Industry"=all_mu
 emp = rbind(emp, data.frame("Year"=all_industries$`masterdat$year`, "Industry"=paste0('All Industries'), "Municipality"=all_industries$`masterdat$area_title`, "Employment"=all_industries$`masterdat$annual_avg_emplvl`))
 emp = rbind(emp, data.frame('Year'=all$`masterdat$year`,
                             'Industry'=paste0('All Industries'), 'Municipality'=paste0('All Municipalities'), 'Employment'=all$`masterdat$annual_avg_emplvl`))
-
-
+                            
 # establishments
 estab = aggregate(masterdat$annual_avg_estabs ~ masterdat$year + masterdat$industry_title + masterdat$area_title, FUN = sum)
 names(estab) = c('Year', 'Industry', 'Municipality', 'Establishments')
@@ -51,7 +53,7 @@ estab = rbind(estab, data.frame("Year"=all_munis$`masterdat$year`, "Industry"=al
 estab = rbind(estab, data.frame("Year"=all_industries$`masterdat$year`, "Industry"=paste0('All Industries'), "Municipality"=all_industries$`masterdat$area_title`, "Establishments"=all_industries$`masterdat$annual_avg_estabs`))
 estab = rbind(estab, data.frame('Year'=all$`masterdat$year`,
                             'Industry'=paste0('All Industries'), 'Municipality'=paste0('All Municipalities'), 'Establishments'=all$`masterdat$annual_avg_estabs`))
-
+                            
 # wages
 wage = aggregate(masterdat$total_annual_wages ~ masterdat$year + masterdat$industry_title + masterdat$area_title, FUN = sum)
 names(wage) = c('Year', 'Industry', 'Municipality', 'Wages')
@@ -72,9 +74,9 @@ Details and Sources {.sidebar data-width=300}
 This dashboard was created using the shiny package in the R programming language. The main source of the data feeding this dashboard is the Quartery Census of Employment and Wages, produced by the Bureau of Labor Statistics (BLS). The data is extracted from the BLS Application User Interface (API) using the R package blsQCEW, and it is aggregated at the County, Supersector level. The documentation for the program that extracts the data and for this dashboard can be found at github.com/ealemar8. 
 
 ```{r}
-selectInput('muni', label = 'Choose a Municipality',
+selectInput('muni', label = 'Municipality',
             choices = sort(emp$Municipality), selected = 'All Municipalities')
-selectInput('industry', label = 'Choose an Industry',
+selectInput('industry', label = 'Industry',
             choices = sort(emp$Industry, decreasing = T), selected = 'All Industries')
 ```
 
