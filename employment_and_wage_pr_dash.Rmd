@@ -55,17 +55,17 @@ estab = rbind(estab, data.frame('Year'=all$`masterdat$year`,
                             'Industry'=paste0('All Industries'), 'Municipality'=paste0('All Municipalities'), 'Establishments'=all$`masterdat$annual_avg_estabs`))
                             
 # wages
-wage = aggregate(masterdat$total_annual_wages ~ masterdat$year + masterdat$industry_title + masterdat$area_title, FUN = sum)
+wage = aggregate(masterdat$avg_annual_pay ~ masterdat$year + masterdat$industry_title + masterdat$area_title, FUN = mean)
 names(wage) = c('Year', 'Industry', 'Municipality', 'Wages')
-all_munis = aggregate(masterdat$total_annual_wages ~ masterdat$year +
-                        masterdat$industry_title, FUN = sum)
-all_industries = aggregate(masterdat$total_annual_wages ~masterdat$year +
-                             masterdat$area_title, FUN = sum)
-all = aggregate(masterdat$total_annual_wages ~ masterdat$year, FUN = sum)
-wage = rbind(wage, data.frame("Year"=all_munis$`masterdat$year`, "Industry"=all_munis$`masterdat$industry_title`, "Municipality"=paste0('All Municipalities'), 'Wages'=all_munis$`masterdat$total_annual_wages`))
-wage = rbind(wage, data.frame("Year"=all_industries$`masterdat$year`, "Industry"=paste0('All Industries'), "Municipality"=all_industries$`masterdat$area_title`, "Wages"=all_industries$`masterdat$total_annual_wages`))
+all_munis = aggregate(masterdat$avg_annual_pay ~ masterdat$year +
+                        masterdat$industry_title, FUN = mean)
+all_industries = aggregate(masterdat$avg_annual_pay ~masterdat$year +
+                             masterdat$area_title, FUN = mean)
+all = aggregate(masterdat$avg_annual_pay ~ masterdat$year, FUN = mean)
+wage = rbind(wage, data.frame("Year"=all_munis$`masterdat$year`, "Industry"=all_munis$`masterdat$industry_title`, "Municipality"=paste0('All Municipalities'), 'Wages'=all_munis$`masterdat$avg_annual_pay`))
+wage = rbind(wage, data.frame("Year"=all_industries$`masterdat$year`, "Industry"=paste0('All Industries'), "Municipality"=all_industries$`masterdat$area_title`, "Wages"=all_industries$`masterdat$avg_annual_pay`))
 wage = rbind(wage, data.frame('Year'=all$`masterdat$year`,
-                                'Industry'=paste0('All Industries'), 'Municipality'=paste0('All Municipalities'), 'Wages'=all$`masterdat$total_annual_wages`))
+                                'Industry'=paste0('All Industries'), 'Municipality'=paste0('All Municipalities'), 'Wages'=all$`masterdat$avg_annual_pay`))
 ```
     
 Details and Sources {.sidebar data-width=300}
@@ -120,7 +120,7 @@ renderPlot({
   ggplot(data = wage[wage$Municipality==input$muni&wage$Industry==input$industry, ], 
          aes(x = Year, y = Wages)) +
     geom_line() +
-    geom_text(data = wage[wage$Municipality==input$muni&wage$Industry==input$industry, ], aes(y = Wages, label = dollar(Wages, scale = 0.000001, suffix='M'))) + ggtitle(paste0('Wages in ', input$muni, ' - ', input$industry))  
+    geom_text(data = wage[wage$Municipality==input$muni&wage$Industry==input$industry, ], aes(y = Wages, label = dollar(Wages))) + ggtitle(paste0('Average Annual Wage in ', input$muni, ' - ', input$industry))  
 })
 ```
 
