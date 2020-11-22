@@ -49,3 +49,6 @@ extract_dat = function(firstyear, lastyear, averages = T, installed_BLSAPI = T){
   datyear$area_title = trimws(datyear$area_title)
   return(datyear)
 }
+
+# example: extract annual averages for all munis and industries for 2015 to 2019 (having package blsAPI already installed) and name extracted data as dat:
+dat = extract_dat(2015, 2019, averages = T, installed_BLSAPI = T)
