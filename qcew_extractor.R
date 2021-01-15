@@ -2,8 +2,9 @@
 # by user in input) of QCEW data at quarterly/annual frequency for 
 # all municipalities and industries in Puerto Rico
 
-extract_dat = function(firstyear, averages = T){
+extract_qcew= function(firstyear, averages = T, agg_code){
   require(blsAPI)
+  require(stringr)
   # munis
   areas = read.table('https://www.bls.gov/cew/classifications/areas/area-titles-txt.txt', fill = T)
   areas$area_fips = areas$V1
@@ -13,6 +14,7 @@ extract_dat = function(firstyear, averages = T){
   municodes = areas[areas$statecode=='72', ]
   municodes = municodes[grep('Municipio', municodes$area_title), ] 
   #dates
+  require(lubridate)
   lastyear = lubridate::year(Sys.Date())-1
   previoustolast = lubridate::year(Sys.Date())-2
   munidat = function(yea, qtr){
@@ -40,20 +42,59 @@ extract_dat = function(firstyear, averages = T){
       out = yeardat(quart = quarts[i], yearss = years)
       datyear = rbind(out, datyear)
     }} else {
-      datyear = yeardat(quart = 'a')
+      datyear = yeardat(quart = 'a', yearss = years)
     }
- # datrecent=NULL
- # if(lubridate::month(Sys.Date())<=3){
- #   
-#  }
+  datrecent = NULL #download most recent and append
+  if(Sys.Date()<=paste0(year(Sys.Date()), '-', '03-09')){
+    quarts = 1:2
+    for(i in 1:length(quarts)){
+      out = yeardat(quart = quarts[i], yearss = lastyear)
+      datrecent = rbind(out, datrecent)
+    } } 
+  else if(Sys.Date()>paste0(year(Sys.Date()), '-', '03-09')){
+    quarts = 1:3
+    for(i in 1:length(quarts)){
+      out = yeardat(quart = quarts[i], yearss = lastyear)
+      datrecent = rbind(out, datrecent)
+    }
+  } else if(Sys.Date()>paste0(year(Sys.Date()), '-', '06-02')){
+    quarts = 1:4
+    for(i in 1:length(quarts)){
+      out = yeardat(quart = quarts[i], yearss = lastyear)
+      datrecent = rbind(out, datrecent)
+    }
+  } else if(Sys.Date()>paste0(year(Sys.Date()), '-', '09-01')){
+    quarts = 1:4
+    pastyeardat = NULL
+    for(i in 1:length(quarts)){
+      out = yeardat(quart = quarts[i], yearss = lastyear)
+      pastyeardat = rbind(out, pastyeardat)
+    }
+    thisyeardat = yeardat(quart = 1, yearss = lubridate::year(Sys.Date()))
+    datrecent = rbind(pastyeardat, thisyeardat)
+  } else if(Sys.Date()>paste0(year(Sys.Date()), '-', '12-01')){
+    quarts = 1:4
+    pastyeardat = NULL
+    for(i in 1:length(quarts)){
+      out = yeardat(quart = quarts[i], yearss = lastyear)
+      pastyeardat = rbind(out, pastyeardat)
+    }
+    qts = 1:2
+    thisyeardat = NULL
+    for(i in 1:length(qts)){
+      out = yeardat(quart = qts[i], yearss = lubridate::year(Sys.Date()))
+      thisyeardat = rbind(out, thisyeardat)
+    }
+    datrecent = rbind(pastyeardat, thisyeardat)
+  }
+  datyear = rbind(datyear, datrecent)
   datyear = merge(datyear, areas,
                   by = c('area_fips'),
                   all.x = T, all.y = F)
   datyear$area_title = str_remove(datyear$area_title,
                                   ' Municipio, Puerto Rico')
   datyear$area_title = trimws(datyear$area_title)
+  datyear = datyear[datyear$agglvl_code==agg_code, ]
   return(datyear)
 }
 
-# example: extract annual averages for all munis and industries for 2015 up to most recent available quarter (having package blsAPI already installed) and name extracted data as dat:
-dat = extract_dat(2015, averages = F, installed_BLSAPI = T)
