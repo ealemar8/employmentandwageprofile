@@ -1,10 +1,13 @@
 # This function extracts multiple years (as selected 
 # by user in input) of QCEW data at quarterly/annual frequency for 
-# all municipalities and industries in Puerto Rico
+# all municipalities and industries in Puerto Rico, up to latest avaiable date
+# of publication.
 
 extract_qcew= function(firstyear, averages = T, agg_code){
+  
   require(blsAPI)
   require(stringr)
+  require(lubridate)
   # munis
   areas = read.table('https://www.bls.gov/cew/classifications/areas/area-titles-txt.txt', fill = T)
   areas$area_fips = areas$V1
@@ -14,9 +17,9 @@ extract_qcew= function(firstyear, averages = T, agg_code){
   municodes = areas[areas$statecode=='72', ]
   municodes = municodes[grep('Municipio', municodes$area_title), ] 
   #dates
-  require(lubridate)
   lastyear = lubridate::year(Sys.Date())-1
   previoustolast = lubridate::year(Sys.Date())-2
+  
   munidat = function(yea, qtr){
     datmun = NULL
     for(i in 1:dim(municodes)[1]){
@@ -26,6 +29,7 @@ extract_qcew= function(firstyear, averages = T, agg_code){
     }
     return(datmun)
   }
+  
   yeardat = function(quart, yearss){
     yeard = NULL
     for(i in 1:length(yearss)){
@@ -34,6 +38,7 @@ extract_qcew= function(firstyear, averages = T, agg_code){
     }
     return(yeard)
   }
+  
   years = firstyear:previoustolast
   datyear = NULL
   if(averages == F){
@@ -44,6 +49,7 @@ extract_qcew= function(firstyear, averages = T, agg_code){
     }} else {
       datyear = yeardat(quart = 'a', yearss = years)
     }
+  
   datrecent = NULL #download most recent and append
   if(Sys.Date()<=paste0(year(Sys.Date()), '-', '03-09')){
     quarts = 1:2
@@ -51,19 +57,22 @@ extract_qcew= function(firstyear, averages = T, agg_code){
       out = yeardat(quart = quarts[i], yearss = lastyear)
       datrecent = rbind(out, datrecent)
     } } 
+  
   else if(Sys.Date()>paste0(year(Sys.Date()), '-', '03-09')){
     quarts = 1:3
     for(i in 1:length(quarts)){
       out = yeardat(quart = quarts[i], yearss = lastyear)
       datrecent = rbind(out, datrecent)
     }
-  } else if(Sys.Date()>paste0(year(Sys.Date()), '-', '06-02')){
+  } 
+    else if(Sys.Date()>paste0(year(Sys.Date()), '-', '06-02')){
     quarts = 1:4
     for(i in 1:length(quarts)){
       out = yeardat(quart = quarts[i], yearss = lastyear)
       datrecent = rbind(out, datrecent)
     }
-  } else if(Sys.Date()>paste0(year(Sys.Date()), '-', '09-01')){
+  } 
+      else if(Sys.Date()>paste0(year(Sys.Date()), '-', '09-01')){
     quarts = 1:4
     pastyeardat = NULL
     for(i in 1:length(quarts)){
@@ -72,7 +81,8 @@ extract_qcew= function(firstyear, averages = T, agg_code){
     }
     thisyeardat = yeardat(quart = 1, yearss = lubridate::year(Sys.Date()))
     datrecent = rbind(pastyeardat, thisyeardat)
-  } else if(Sys.Date()>paste0(year(Sys.Date()), '-', '12-01')){
+  } 
+        else if(Sys.Date()>paste0(year(Sys.Date()), '-', '12-01')){
     quarts = 1:4
     pastyeardat = NULL
     for(i in 1:length(quarts)){
@@ -87,6 +97,7 @@ extract_qcew= function(firstyear, averages = T, agg_code){
     }
     datrecent = rbind(pastyeardat, thisyeardat)
   }
+    
   datyear = rbind(datyear, datrecent)
   datyear = merge(datyear, areas,
                   by = c('area_fips'),
@@ -96,5 +107,6 @@ extract_qcew= function(firstyear, averages = T, agg_code){
   datyear$area_title = trimws(datyear$area_title)
   datyear = datyear[datyear$agglvl_code==agg_code, ]
   return(datyear)
+  
 }
 
